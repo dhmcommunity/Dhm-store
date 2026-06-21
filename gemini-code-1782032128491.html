@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DHM HUB STORE v10.5</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1; --primary-dark: #4f46e5; --accent: #f97316;
+            --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --bg-main: #f8fafc;
+            --bg-card: #ffffff; --text-dark: #0f172a; --text-muted: #64748b; --border: #e2e8f0;
+        }
+        .dark-theme {
+            --primary: #818cf8; --primary-dark: #6366f1; --accent: #fb923c;
+            --success: #34d399; --danger: #f87171; --warning: #fbbf24; --bg-main: #0f172a;
+            --bg-card: #1e293b; --text-dark: #f8fafc; --text-muted: #94a3b8; --border: #334155;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.2s, color 0.2s; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-main); color: var(--text-dark); padding-bottom: 100px; display: flex; justify-content: center; overflow-x: hidden; }
+        
+        .container { width: 100%; max-width: 480px; background: var(--bg-card); min-height: 100vh; box-shadow: 0 0 40px rgba(0,0,0,0.05); position: relative; display: flex; flex-direction: column; }
+        
+        .navbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg-card); z-index: 90; }
+        .navbar h1 { font-size: 20px; font-weight: 800; background: linear-gradient(to right, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-actions { display: flex; gap: 8px; align-items: center; }
+        
+        .circle-btn { background: var(--bg-main); border: 1px solid var(--border); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-dark); font-size: 16px; position: relative; }
+        .circle-btn:active { transform: scale(0.92); }
+
+        .meta-status-row { padding: 12px 16px 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .status-badge { font-size: 10px; padding: 5px 10px; border-radius: 20px; font-weight: 800; text-transform: uppercase; }
+        .status-online { background: #ecfdf5; color: #065f46; }
+        .status-break { background: #fffbeb; color: #92400e; }
+        .status-offline { background: #fef2f2; color: #991b1b; }
+        .status-fast { background: #eff6ff; color: #1e40af; }
+
+        .search-box { width: calc(100% - 32px); margin: 0 16px 12px; padding: 14px; background: var(--bg-main); border: 1px solid var(--border); border-radius: 14px; color: var(--text-dark); font-size: 13px; font-weight: 500; }
+        .filter-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 0 16px 16px; scrollbar-width: none; }
+        .filter-scroll::-webkit-scrollbar { display: none; }
+        .f-btn { background: var(--bg-main); color: var(--text-muted); border: 1px solid var(--border); padding: 9px 18px; border-radius: 25px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+        .f-btn.active { background: var(--primary); color: #fff; border-color: transparent; }
+
+        .item-grid { padding: 0 16px 16px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .item-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; position: relative; }
+        .item-card img { width: 100%; height: 120px; object-fit: cover; }
+        .card-info { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        
+        .flash-badge { position: absolute; top: 8px; left: 8px; background: var(--danger); color: white; font-size: 9px; padding: 4px 8px; font-weight: 800; border-radius: 8px; z-index: 5; }
+
+        .sheet-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 200; justify-content: center; align-items: flex-end; backdrop-filter: blur(4px); }
+        .bottom-sheet { background: var(--bg-card); width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; max-height: 85vh; overflow-y: auto; }
+        .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+
+        .view-page { display: none; background: var(--bg-main); min-height: 100vh; position: absolute; top: 0; left: 0; width: 100%; z-index: 100; padding-bottom: 100px; }
+        .view-header { background: var(--bg-card); padding: 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+
+        .admin-panel { display: none; padding: 18px; background: var(--bg-card); border: 3px dashed var(--primary); margin: 12px 16px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .adm-section-title { font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--primary); margin: 14px 0 8px 0; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+        .adm-item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: var(--bg-main); border-radius: 8px; margin-bottom: 6px; font-size: 11px; }
+
+        .order-card { background: var(--bg-main); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; font-size: 12px; }
+        .order-status { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-top: 4px; }
+
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; background: var(--bg-main); border: 1px solid var(--border); border-radius: 10px; color: var(--text-dark); font-size: 13px; font-weight: 500; }
+        .btn-submit { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .btn-danger-sm { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 700; }
+        .btn-edit-sm { background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 700; margin-right: 4px; }
+
+        .file-upload-wrapper { background: var(--bg-main); border: 2px dashed var(--border); padding: 14px; text-align: center; border-radius: 10px; margin-bottom: 12px; cursor: pointer; position: relative; }
+        .file-upload-wrapper input[type="file"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .file-upload-wrapper p { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+        .img-preview-adm { max-width: 100%; max-height: 140px; object-fit: contain; border-radius: 6px; display: none; margin: 6px auto 0; border: 1px solid var(--border); }
+
+        .bottom-action-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--bg-card); padding: 14px 16px; border-top: 1px solid var(--border); display: flex; gap: 12px; z-index: 95; }
+        .btn-action { flex: 1; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 700; border: none; cursor: pointer; text-align: center; }
+        .footer-credit { text-align: center; padding: 24px 16px; font-size: 11px; color: var(--text-muted); background: var(--bg-main); font-weight: 600; border-top: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+
+<div class="container" id="homePage">
+    <div class="navbar">
+        <h1>DHM HUB STORE</h1>
+        <div class="nav-actions">
+            <button class="circle-btn" onclick="toggleTheme()">🌓</button>
+            <button class="circle-btn" onclick="openCartSheet()">🛒 <span id="cartCount" style="background:var(--danger); color:white; font-size:9px; padding:2px 5px; border-radius:50%; position:absolute; top:-2px; right:-2px; font-weight:bold;">0</span></button>
+            <button class="circle-btn" onclick="openAdminDashboard()">⚙️</button>
+        </div>
+    </div>
+
+    <div class="meta-status-row">
+        <span id="storeStatusBadge" class="status-badge status-online">🟢 STORE ONLINE</span>
+        <span class="status-badge status-fast">⚡ INSTANT IN-APP TRANSACTION</span>
+        <span class="status-badge" style="background:var(--bg-main); color:var(--text-muted); cursor:pointer;" onclick="clearCacheApp()">🧹 Reset Cache</span>
+    </div>
+
+    <input type="text" id="searchField" class="search-box" placeholder="Cari item game / akun / script..." oninput="renderAppHome()">
+    
+    <div style="padding: 0 16px 10px; display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-muted)">
+        <span>Urutan Item:</span>
+        <select id="priceSorter" onchange="renderAppHome()" style="width:130px; padding:4px; margin:0; font-size:11px; border-radius:6px;">
+            <option value="new">Paling Baru</option>
+            <option value="low">Harga Terendah</option>
+            <option value="high">Harga Tertinggi</option>
+        </select>
+    </div>
+
+    <div class="filter-scroll">
+        <button class="f-btn active" onclick="setAppFilter('Semua', this)">✨ Semua</button>
+        <button class="f-btn" onclick="setAppFilter('Roblox', this)">🤖 Roblox</button>
+        <button class="f-btn" onclick="setAppFilter('ML', this)">⚔️ Mobile Legends</button>
+    </div>
+
+    <div id="adminContainer" class="admin-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="font-size:14px; color:var(--primary); font-weight:800;">🛠️ ADMIN CONTROL CENTER v10.5</h3>
+            <span style="cursor:pointer; font-size:11px; font-weight:bold; color:var(--danger);" onclick="closeAdminPanel()">[Tutup X]</span>
+        </div>
+
+        <div class="adm-section-title" style="color:var(--accent)">⚙️ Pengatur Status Toko</div>
+        <select id="admStoreStatusSelect" onchange="updateStoreStatus(this.value)" style="margin-bottom:15px; font-weight:bold;">
+            <option value="online">🟢 Store Online</option>
+            <option value="break">🟡 Store Sedang Istirahat</option>
+            <option value="offline">🔴 Store Offline</option>
+        </select>
+
+        <div class="adm-section-title" style="color:var(--accent)">📦 List Antrean Order & Bukti Gambar Masuk</div>
+        <div id="admOrderListWrapper" style="max-height: 380px; overflow-y: auto; margin-bottom: 15px;">
+            <i style="font-size:11px; color:var(--text-muted);">Belum ada antrean transaksi baru dari pembeli.</i>
+        </div>
+
+        <div class="adm-section-title">➕ Tambah Dagangan Baru</div>
+        <input type="text" id="admTitle" placeholder="Nama Akun / Script / Item">
+        <input type="number" id="admPrice" placeholder="Harga Jual (Rp)">
+        <input type="number" id="admStock" placeholder="Stok Kuantitas">
+        <select id="admCategory">
+            <option value="Roblox">Roblox</option>
+            <option value="ML">Mobile Legends</option>
+        </select>
+        
+        <div class="file-upload-wrapper">
+            <p id="uploadLabelTxt">📂 Klik untuk Pilih Gambar Produk</p>
+            <input type="file" id="admFileInp" accept="image/*" onchange="processImageUploadAdmin(this)">
+            <img id="admUploadedPreview" class="img-preview-adm">
+        </div>
+
+        <textarea id="admDesc" placeholder="Deskripsi spesifikasi data / akun..."></textarea>
+        <button class="btn-submit" onclick="submitNewProduct()">Pajang Item ke Toko 🚀</button>
+
+        <div class="adm-section-title">📝 Manajemen Stok Etalase</div>
+        <div id="admProductListWrapper"></div>
+    </div>
+
+    <div id="appProductGrid" class="item-grid"></div>
+
+    <div class="footer-credit">
+        Powered by DHM Hub Premium v10.5<br><span style="font-size:9px; opacity:0.6;">Secure Local Transactions Framework</span>
+    </div>
+</div>
+
+<div class="view-page" id="appDetailPage">
+    <div class="view-header">
+        <span style="cursor:pointer; font-size:14px; font-weight:800;" onclick="closeAppDetailPage()">← Kembali</span>
+        <b style="color:var(--primary)">Rincian Produk</b>
+    </div>
+    <img id="detailImg" style="width:100%; height:200px; object-fit:cover;">
+    <div style="padding:20px; background:var(--bg-card)">
+        <h2 id="detailTitle" style="font-size:18px; font-weight:800;">Nama Item</h2>
+        <div id="detailPrice" style="font-size:22px; color:var(--accent); font-weight:800; margin-top:4px;">Rp 0</div>
+        
+        <div style="margin-top:12px; font-size:11px; color:var(--text-muted);">
+            Sisa Persediaan: <b id="detailStockTxt">0</b> Item
+        </div>
+        <p id="detailDesc" style="font-size:13px; margin-top:14px; color:var(--text-muted); white-space:pre-line; line-height:1.6;"></p>
+    </div>
+    <div class="bottom-action-bar">
+        <button id="btnBuyNowAction" class="btn-action" style="background:var(--primary); color:white;" onclick="pushItemToCart()">🛒 Beli Sekarang</button>
+    </div>
+</div>
+
+<div class="sheet-overlay" id="appCartSheet" onclick="closeSheetWindow('appappCartSheet')">
+    <div class="bottom-sheet" onclick="event.stopPropagation()">
+        <div class="sheet-header">
+            <h3 style="font-size:16px; font-weight:800;">🛒 Checkout & Unggah Bukti Bayar</h3>
+            <span style="cursor:pointer; font-weight:bold;" onclick="closeSheetWindow('appCartSheet')">✕</span>
+        </div>
+        
+        <div id="cartItemsContainer" style="max-height:100px; overflow-y:auto; margin-bottom:12px; display:flex; flex-direction:column; gap:8px;"></div>
+        
+        <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Format Informasi Pembeli:</label>
+        <input type="text" id="buyerName" placeholder="Nama Lengkap Anda (Wajib)">
+        <input type="number" id="buyerWA" placeholder="Nomor WhatsApp Aktif (Wajib)">
+        <input type="text" id="cartCustomerNote" placeholder="Catatan Tambahan (Misal: Nickname/ID Game)">
+
+        <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Pilih Metode Pembayaran Tujuan:</label>
+        <select id="cartPaymentMethod" onchange="checkQrisNotice(this.value)">
+            <option value="DANA - 082112301183">DANA (082112301183)</option>
+            <option value="OVO - 0895351679334">OVO (0895351679334)</option>
+            <option value="GOPAY - 0895351679334">GOPAY (0895351679334)</option>
+            <option value="SEABANK - 901188218636">SeaBank (901188218636)</option>
+            <option value="QRIS - Scan Code Ready">QRIS (Scan Ready)</option>
+        </select>
+
+        <div id="qrisNoticeBox" style="display:none; background:#eff6ff; border:1px dashed #3b82f6; padding:10px; border-radius:8px; font-size:11px; margin-bottom:10px;">
+            🔗 <b>Tautan Scan QRIS Kamu:</b> <a href="https://wa.me/p/26679525858416368/62895351679334" target="_blank" style="color:var(--primary); font-weight:bold;">Buka Link Gambar QRIS</a>
+        </div>
+
+        <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Kirim Bukti Pembayaran (Gambar Struk):</label>
+        <div class="file-upload-wrapper" style="margin-top:4px;">
+            <p id="buyerUploadLabel">📸 Klik untuk Memasukkan Gambar Struk/Bukti</p>
+            <input type="file" id="buyerFileInp" accept="image/*" onchange="processImageUploadBuyer(this)">
+            <img id="buyerUploadedPreview" class="img-preview-adm" style="max-height:90px;">
+        </div>
+
+        <div style="background:var(--bg-main); padding:14px; border-radius:12px; font-size:12px; margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; font-weight:800; font-size:15px; color:var(--accent);">
+                <span>Total Bayar:</span><span id="txtFinalPriceSum">Rp 0</span>
+            </div>
+        </div>
+        <button class="btn-submit" style="background:#10b981; margin-top:12px;" onclick="executeWebCheckoutEngine()">Kirim & Selesaikan Pembayaran 🚀</button>
+    </div>
+</div>
+
+<script>
+    const SECURITY_KEY_ADMIN = "rayyenstockweb";
+    
+    let currentBase64ProductImage = "";
+    let currentBase64BuyerReceipt = "";
+    
+    // Status Toko Default bawaan sistem lokal
+    let currentStoreStatus = localStorage.getItem('dhm_store_status') || "online";
+
+    let productDB = JSON.parse(localStorage.getItem('dhm_v10_products')) || [
+        { id: 101, title: "Script Blox Fruits Hub - Auto Farm Premium", game: "Roblox", price: 15000, stock: 25, img: "", desc: "Script anti-banned bypass anti-cheat paling aman.", flash: true },
+        { id: 102, title: "Akun Mobile Legends Rangking Mythic Bekas", game: "ML", price: 35000, stock: 1, img: "", desc: "Akun wangi no minus, jaminan aman login lancar jaya.", flash: false }
+    ];
+
+    let incomingOrdersDB = JSON.parse(localStorage.getItem('dhm_v10_orders')) || [];
+    let cartList = [];
+    let activeCategoryFilter = "Semua";
+    let activeProductTarget = null;
+
+    // Fungsi Pengatur Status Toko Real-time
+    function applyStoreStatusUI(status) {
+        const badge = document.getElementById('storeStatusBadge');
+        badge.className = "status-badge"; 
+        
+        if (status === "online") {
+            badge.classList.add('status-online');
+            badge.innerText = "🟢 STORE ONLINE";
+        } else if (status === "break") {
+            badge.classList.add('status-break');
+            badge.innerText = "🟡 STORE SEDANG ISTIRAHAT";
+        } else if (status === "offline") {
+            badge.classList.add('status-offline');
+            badge.innerText = "🔴 STORE OFFLINE";
+        }
+    }
+
+    function updateStoreStatus(val) {
+        currentStoreStatus = val;
+        localStorage.setItem('dhm_store_status', val);
+        applyStoreStatusUI(val);
+    }
+
+    function processImageUploadAdmin(input) {
+        const file = input.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                currentBase64ProductImage = e.target.result;
+                const previewImg = document.getElementById('admUploadedPreview');
+                previewImg.src = e.target.result; previewImg.style.display = "block";
+                document.getElementById('uploadLabelTxt').innerText = "✅ Gambar Berhasil Dimuat!";
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function processImageUploadBuyer(input) {
+        const file = input.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                currentBase64BuyerReceipt = e.target.result;
+                const previewImg = document.getElementById('buyerUploadedPreview');
+                previewImg.src = e.target.result; previewImg.style.display = "block";
+                document.getElementById('buyerUploadLabel').innerText = "✅ Struk Pembayaran Terpasang!";
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function checkQrisNotice(val) {
+        document.getElementById('qrisNoticeBox').style.display = val.includes("QRIS") ? "block" : "none";
+    }
+
+    function renderAppHome() {
+        const grid = document.getElementById('appProductGrid');
+        grid.innerHTML = "";
+        let searchKeyword = document.getElementById('searchField').value.toLowerCase();
+        let sortingStrategy = document.getElementById('priceSorter').value;
+
+        let itemsFiltered = productDB.filter(p => {
+            return p.title.toLowerCase().includes(searchKeyword) && (activeCategoryFilter === "Semua" || p.game === activeCategoryFilter);
+        });
+
+        if (sortingStrategy === "low") itemsFiltered.sort((a,b) => a.price - b.price);
+        if (sortingStrategy === "high") itemsFiltered.sort((a,b) => b.price - a.price);
+
+        itemsFiltered.forEach(p => {
+            let itemCard = document.createElement('div');
+            itemCard.className = "item-card";
+            itemCard.onclick = () => openAppDetailPage(p.id);
+            itemCard.innerHTML = `
+                ${p.flash ? '<div class="flash-badge">⚡ FLASH SALE</div>' : ''}
+                <img src="${p.img || 'https://placehold.co/300x180/6366f1/ffffff?text='+p.game}">
+                <div class="card-info">
+                    <h4 style="font-size:12px; font-weight:700; line-height:1.4;">${p.title}</h4>
+                    <div style="margin-top:6px;">
+                        <span style="font-size:13px; font-weight:800; color:var(--accent);">Rp ${p.price.toLocaleString()}</span>
+                        <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-muted); margin-top:4px;">
+                            <span>Stok: ${p.stock}</span>
+                            <span>${p.game}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(itemCard);
+        });
+    }
+
+    function openAdminDashboard() {
+        let insertedKey = prompt("Masukkan Kunci PIN Keamanan Admin:");
+        if (insertedKey === SECURITY_KEY_ADMIN) {
+            document.getElementById('adminContainer').style.display = "block";
+            document.getElementById('admStoreStatusSelect').value = currentStoreStatus;
+            renderAdminProductControls();
+            renderAdminIncomingOrders();
+            window.scrollTo({ top: document.getElementById('adminContainer').offsetTop - 20, behavior: 'smooth' });
+        } else if (insertedKey !== null) {
+            alert("🔒 Sandi PIN Admin Salah!");
+        }
+    }
+
+    function renderAdminIncomingOrders() {
+        const wrap = document.getElementById('admOrderListWrapper');
+        wrap.innerHTML = "";
+        if(incomingOrdersDB.length === 0) {
+            wrap.innerHTML = `<i style="font-size:11px; color:var(--text-muted);">Belum ada antrean transaksi baru dari pembeli.</i>`;
+            return;
+        }
+
+        incomingOrdersDB.forEach((ord, index) => {
+            let card = document.createElement('div');
+            card.className = "order-card";
+            let statusColor = ord.status === "Selesai (Terkonfirmasi)" ? "var(--success)" : "var(--accent)";
+
+            card.innerHTML = `
+                <div><b>ID Order:</b> #${ord.id}</div>
+                <div><b>Nama Pembeli:</b> ${ord.buyerName}</div>
+                <div><b>No WA:</b> <a href="https://wa.me/${ord.buyerWA}" target="_blank" style="color:var(--primary); font-weight:bold;">${ord.buyerWA}</a></div>
+                <div style="margin: 4px 0;"><b>Item Dipesan:</b> <span style="color:var(--primary); font-weight:bold;">${ord.itemTitle}</span></div>
+                <div><b>Metode Tujuan:</b> ${ord.paymentMethod}</div>
+                <div><b>Total Tagihan:</b> <b style="color:var(--accent)">Rp ${ord.totalPay.toLocaleString()}</b></div>
+                <div><b>Catatan:</b> ${ord.note}</div>
+                
+                <div style="margin-top:8px;">
+                    <b>Bukti Struk Transfer:</b><br>
+                    ${ord.receiptImg ? `<img src="${ord.receiptImg}" style="width:100%; max-height:220px; object-fit:contain; border:1px solid var(--border); margin-top:4px; border-radius:6px;">` : `<i style="color:var(--danger)">Tidak mengunggah bukti gambar</i>`}
+                </div>
+
+                <div style="margin-top:10px; display:flex; gap:6px; align-items:center; justify-content:space-between;">
+                    <span class="order-status" style="background:${statusColor}; color:white;">${ord.status}</span>
+                    ${ord.status === "Pending (Minta Dicek)" ? `<button class="btn-submit" style="padding:4px 10px; font-size:11px; width:auto; margin:0; background:var(--success);" onclick="confirmOrderSuccess(${index})">Konfirmasi & Kurangi Stok ✓</button>` : ''}
+                    <button class="btn-danger-sm" style="padding:4px 8px;" onclick="deleteOrderHistory(${index})">Hapus Log</button>
+                </div>
+            `;
+            wrap.appendChild(card);
+        });
+    }
+
+    function confirmOrderSuccess(index) {
+        let ord = incomingOrdersDB[index];
+        let matchedProduct = productDB.find(p => p.title === ord.itemTitle);
+        
+        if (matchedProduct) {
+            if (matchedProduct.stock > 0) {
+                matchedProduct.stock--;
+                localStorage.setItem('dhm_v10_products', JSON.stringify(productDB));
+            } else {
+                alert("Peringatan: Stok barang sudah habis/kosong!");
+            }
+        }
+        
+        ord.status = "Selesai (Terkonfirmasi)";
+        localStorage.setItem('dhm_v10_orders', JSON.stringify(incomingOrdersDB));
+        renderAdminIncomingOrders();
+        renderAppHome();
+        alert(`Sukses mengonfirmasi pesanan ${ord.buyerName}. Data akun siap kamu serahkan ke WA/Kontak pembeli!`);
+    }
+
+    function deleteOrderHistory(index) {
+        if(confirm("Hapus catatan orderan ini dari dashboard?")) {
+            incomingOrdersDB.splice(index, 1);
+            localStorage.setItem('dhm_v10_orders', JSON.stringify(incomingOrdersDB));
+            renderAdminIncomingOrders();
+        }
+    }
+
+    function renderAdminProductControls() {
+        const wrapper = document.getElementById('admProductListWrapper');
+        wrapper.innerHTML = "";
+        productDB.forEach((p) => {
+            let row = document.createElement('div');
+            row.className = "adm-item-row";
+            row.innerHTML = `
+                <div style="max-width:240px;"><b>${p.title}</b><br>Rp ${p.price.toLocaleString()} | Stok: ${p.stock}</div>
+                <div>
+                    <button class="btn-edit-sm" onclick="quickEditProductAdmin(${p.id})">Edit</button>
+                    <button class="btn-danger-sm" onclick="deleteProductAdmin(${p.id})">Hapus</button>
+                </div>
+            `;
+            wrapper.appendChild(row);
+        });
+    }
+
+    function quickEditProductAdmin(id) {
+        let target = productDB.find(x => x.id === id);
+        let currentPrice = prompt("Ubah Harga Baru (Rp):", target.price);
+        let currentStock = prompt("Ubah Jumlah Stok Sisa:", target.stock);
+        
+        if(currentPrice) target.price = parseInt(currentPrice);
+        if(currentStock) target.stock = parseInt(currentStock);
+
+        localStorage.setItem('dhm_v10_products', JSON.stringify(productDB));
+        renderAdminProductControls(); renderAppHome();
+    }
+
+    function deleteProductAdmin(id) {
+        if(confirm("Yakin ingin menghapus produk ini?")) {
+            productDB = productDB.filter(x => x.id !== id);
+            localStorage.setItem('dhm_v10_products', JSON.stringify(productDB));
+            renderAdminProductControls(); renderAppHome();
+        }
+    }
+
+    function submitNewProduct() {
+        let t = document.getElementById('admTitle').value;
+        let p = document.getElementById('admPrice').value;
+        let s = document.getElementById('admStock').value;
+        let c = document.getElementById('admCategory').value;
+        let d = document.getElementById('admDesc').value;
+
+        if(!t || !p || !s) return alert("Harap isi Judul, Harga, dan Stok!");
+
+        productDB.unshift({ 
+            id: Date.now(), title: t, game: c, price: parseInt(p), stock: parseInt(s), 
+            img: currentBase64ProductImage, desc: d, flash: false 
+        });
+        
+        localStorage.setItem('dhm_v10_products', JSON.stringify(productDB));
+        
+        document.getElementById('admTitle').value = ""; document.getElementById('admPrice').value = ""; 
+        document.getElementById('admStock').value = ""; document.getElementById('admDesc').value = "";
+        document.getElementById('admFileInp').value = "";
+        document.getElementById('admUploadedPreview').style.display = "none";
+        document.getElementById('uploadLabelTxt').innerText = "📂 Klik untuk Pilih Gambar Produk";
+        currentBase64ProductImage = "";
+
+        renderAdminProductControls(); renderAppHome(); alert("Produk baru berhasil dipajang!");
+    }
+
+    function closeAdminPanel() { document.getElementById('adminContainer').style.display = "none"; }
+
+    function openAppDetailPage(id) {
+        activeProductTarget = productDB.find(x => x.id === id);
+        document.getElementById('detailImg').src = activeProductTarget.img || 'https://placehold.co/500/6366f1/ffffff?text='+activeProductTarget.game;
+        document.getElementById('detailTitle').innerText = activeProductTarget.title;
+        document.getElementById('detailPrice').innerText = `Rp ${activeProductTarget.price.toLocaleString()}`;
+        document.getElementById('detailStockTxt').innerText = activeProductTarget.stock;
+        document.getElementById('detailDesc').innerText = activeProductTarget.desc || "Tidak ada rincian deskripsi tambahan.";
+        
+        // Blokir pembelian jika store sedang istirahat atau offline
+        const btnBuy = document.getElementById('btnBuyNowAction');
+        if (currentStoreStatus === "offline" || currentStoreStatus === "break") {
+            btnBuy.style.background = "#64748b";
+            btnBuy.innerText = "🔒 Store Tidak Menerima Pesanan";
+        } else {
+            btnBuy.style.background = "var(--primary)";
+            btnBuy.innerText = "🛒 Beli Sekarang";
+        }
+        
+        document.getElementById('appDetailPage').style.display = "block";
+    }
+
+    function closeAppDetailPage() { document.getElementById('appDetailPage').style.display = "none"; }
+
+    function pushItemToCart() {
+        if (currentStoreStatus === "offline" || currentStoreStatus === "break") {
+            return alert("Maaf, Toko saat ini tidak melayani pembelian karena sedang Offline / Istirahat.");
+        }
+        if(activeProductTarget.stock <= 0) return alert("Stok kosong!");
+        cartList = [{ id: activeProductTarget.id, title: activeProductTarget.title, price: activeProductTarget.price, qty: 1 }];
+        document.getElementById('cartCount').innerText = cartList.length;
+        closeAppDetailPage(); openCartSheet();
+    }
+
+    function openCartSheet() {
+        let container = document.getElementById('cartItemsContainer');
+        container.innerHTML = "";
+        let subtotal = 0;
+        cartList.forEach((item) => {
+            subtotal += item.price * item.qty;
+            let row = document.createElement('div');
+            row.style = "display:flex; justify-content:space-between; background:var(--bg-main); padding:10px; border-radius:10px; font-size:12px;";
+            row.innerHTML = `
+                <div><b>${item.title}</b><br><span style="color:var(--accent);">Rp ${item.price.toLocaleString()}</span></div>
+                <div><b>${item.qty} Pcs</b></div>
+            `;
+            container.appendChild(row);
+        });
+        document.getElementById('txtFinalPriceSum').innerText = `Rp ${subtotal.toLocaleString()}`;
+        document.getElementById('cartPaymentMethod').selectedIndex = 0;
+        checkQrisNotice(document.getElementById('cartPaymentMethod').value);
+        showSheetWindow('appCartSheet');
+    }
+
+    function executeWebCheckoutEngine() {
+        if (currentStoreStatus === "offline" || currentStoreStatus === "break") {
+            return alert("Pesanan ditolak. Toko sedang offline/istirahat.");
+        }
+        if(cartList.length === 0) return alert("Keranjang belanja kosong!");
+        
+        let nameVal = document.getElementById('buyerName').value;
+        let waVal = document.getElementById('buyerWA').value;
+        let noteVal = document.getElementById('cartCustomerNote').value || "Tanpa Catatan";
+        let methodVal = document.getElementById('cartPaymentMethod').value;
+
+        if(!nameVal || !waVal) {
+            return alert("❌ Mohon isi data format Anda! Nama Lengkap & WhatsApp Wajib diisi.");
+        }
+        if(!currentBase64BuyerReceipt) {
+            return alert("❌ Mohon unggah foto bukti/struk transfer pembayaran Anda terlebih dahulu!");
+        }
+
+        let newOrder = {
+            id: Math.floor(1000 + Math.random() * 9000),
+            buyerName: nameVal,
+            buyerWA: waVal,
+            itemTitle: cartList[0].title,
+            totalPay: cartList[0].price * cartList[0].qty,
+            paymentMethod: methodVal,
+            note: noteVal,
+            receiptImg: currentBase64BuyerReceipt,
+            status: "Pending (Minta Dicek)"
+        };
+
+        incomingOrdersDB.push(newOrder);
+        localStorage.setItem('dhm_v10_orders', JSON.stringify(incomingOrdersDB));
+
+        document.getElementById('buyerName').value = "";
+        document.getElementById('buyerWA').value = "";
+        document.getElementById('cartCustomerNote').value = "";
+        document.getElementById('buyerFileInp').value = "";
+        document.getElementById('buyerUploadedPreview').style.display = "none";
+        document.getElementById('buyerUploadLabel').innerText = "📸 Klik untuk Memasukkan Gambar Struk/Bukti";
+        currentBase64BuyerReceipt = "";
+        cartList = [];
+        document.getElementById('cartCount').innerText = 0;
+
+        closeSheetWindow('appCartSheet');
+        alert("🎉 Pembayaran Anda berhasil dikirim ke database! Silakan tunggu beberapa saat, Admin DHM HUB akan segera memeriksa foto struk Anda di panel admin.");
+    }
+
+    function toggleTheme() { document.body.classList.toggle('dark-theme'); }
+    function setAppFilter(cat, btn) { activeCategoryFilter = cat; document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderAppHome(); }
+    function clearCacheApp() { localStorage.clear(); alert("Cache & Seluruh Data Web Direset!"); location.reload(); }
+    function showSheetWindow(id) { document.getElementById(id).style.display = "flex"; }
+    function closeSheetWindow(id) { document.getElementById(id).style.display = "none"; }
+
+    // Init awal status toko
+    applyStoreStatusUI(currentStoreStatus);
+    renderAppHome();
+</script>
+</body>
+</html>
